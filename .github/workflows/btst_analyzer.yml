@@ -42,8 +42,8 @@ jobs:
       # ── 3. Install dependencies ───────────────────────────────────────────
       - name: 📦 Install Dependencies
         run: |
-          pip install --upgrade pip
-          pip install requests google-generativeai
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       # ── 4. Run AI Analyzer ────────────────────────────────────────────────
       - name: 🤖 Run BTST AI Analyzer
