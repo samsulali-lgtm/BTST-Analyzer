@@ -1,0 +1,82 @@
+name: 🤖 BTST AI Market Analyzer
+
+on:
+  # ── Scheduled runs (MCX closes at 11:30 PM IST = 18:00 UTC) ──────────────
+  schedule:
+    # Runs at 17:45 UTC = 11:15 PM IST — 15 min before MCX close (Mon-Fri)
+    - cron: "45 17 * * 1-5"
+    # Extra run at 09:45 UTC = 3:15 PM IST — 15 min before NSE/BSE close
+    - cron: "45 9 * * 1-5"
+
+  # ── Manual trigger (run anytime from GitHub UI) ───────────────────────────
+  workflow_dispatch:
+    inputs:
+      session:
+        description: "Session type"
+        required: false
+        default: "manual"
+        type: choice
+        options:
+          - manual
+          - pre-nse-close
+          - pre-mcx-close
+
+jobs:
+  analyze-market:
+    name: 📊 Run AI Market Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # ── 1. Checkout code ──────────────────────────────────────────────────
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Python ───────────────────────────────────────────────────
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # ── 3. Install dependencies ───────────────────────────────────────────
+      - name: 📦 Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install requests google-generativeai
+
+      # ── 4. Run AI Analyzer ────────────────────────────────────────────────
+      - name: 🤖 Run BTST AI Analyzer
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+        run: |
+          python scripts/btst_analyzer.py
+
+      # ── 5. Upload report as artifact ──────────────────────────────────────
+      - name: 📄 Upload Report Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: btst-report-${{ github.run_id }}
+          path: btst_report_*.txt
+          retention-days: 30
+
+      # ── 6. Create GitHub Summary ──────────────────────────────────────────
+      - name: 📝 Write Job Summary
+        if: always()
+        run: |
+          echo "## 🤖 BTST AI Analysis Run" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run Time:** $(date '+%d %b %Y %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Report:** Download from Artifacts tab above" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f btst_report_*.txt ]; then
+            echo "### Report Preview" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            head -50 btst_report_*.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
