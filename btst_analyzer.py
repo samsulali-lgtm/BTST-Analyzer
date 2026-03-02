@@ -112,7 +112,7 @@ def fetch_fear_greed() -> str:
 def run_ai_analysis(market_data: dict, headlines: list, fear_greed: str) -> str:
     """Send all data to Gemini and get BTST recommendations."""
     model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash-001",
+        model_name="gemini-2.5-flash-lite",
         system_instruction=(
             "You are an expert Indian market analyst specializing in BTST (Buy Today Sell Tomorrow) "
             "and short-term commodity/equity trades on MCX and NSE. Be specific, data-driven, and concise. "
